@@ -14,8 +14,10 @@ final class UnwrapTests: XCTestCase {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct
         // results.
-        let empty: String? = nil
-        _ = unwrap(empty, "Should never be empty")
+        var empty: String? = "value"
+        XCTAssertEqual(forceUnwrap(empty, "Should never be empty"), "value")
+        empty = nil
+        _ = forceUnwrap(empty, "Oops it's empty")
         XCTFail("Should have trapped")
     }
 

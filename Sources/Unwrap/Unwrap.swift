@@ -6,10 +6,18 @@
 //  Copyright © 2020 John Holdsworth. All rights reserved.
 //
 
-public func unwrap<T>(_ optional: T?, _ reason: String,
+/// Force unwrap an optional providing more debug information
+/// than the '!' postfix operator.
+/// - Parameters:
+///   - optional: Optional to be unwrapped
+///   - reasoning: Resaonsing why it should never be nil
+/// - Returns: unwrapped type
+public func forceUnwrap<T>(_ optional: T?, _ reasoning: String,
     file: StaticString = #file, line: UInt = #line) -> T {
-    guard let unwrapped = optional else {
-        fatalError("Forced unwrap of type \(T?.self) asserting '\(reason)' failed", file: file, line: line)
+    switch optional {
+    case .none:
+        fatalError("Forced unwrap of type \(T?.self) asserting '\(reasoning)' failed", file: file, line: line)
+    case .some(let unwrapped):
+        return unwrapped
     }
-    return unwrapped
 }
