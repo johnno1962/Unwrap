@@ -21,3 +21,29 @@ public func forceUnwrap<T>(_ optional: T?, _ reasoning: String,
         return unwrapped
     }
 }
+
+import Foundation
+
+extension URL {
+    /// Non-optional URL initialiser taking StaticString.
+    /// - Parameter static: Hard coded URL static string.
+    public init(static string: StaticString,
+                file: StaticString = #file, line: UInt = #line) {
+        self = forceUnwrap(URL(string: string.description),
+                           "Valid static URL string \"\(string)\"",
+                           file: file, line: line)
+    }
+}
+
+extension NSRegularExpression {
+    convenience init(static pattern: StaticString,
+                     options: NSRegularExpression.Options = [],
+                     file: StaticString = #file, line: UInt = #line) {
+        do {
+            try self.init(pattern: pattern.description, options: options)
+        } catch {
+            fatalError("Invalid static regex pattern \"\(pattern)\": \(error)",
+                       file: file, line: line)
+        }
+    }
+}

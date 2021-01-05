@@ -16,8 +16,8 @@ final class UnwrapTests: XCTestCase {
         // results.
         var empty: String? = "value"
         XCTAssertEqual(forceUnwrap(empty, "Should never be empty"), "value")
-        empty = nil
-        _ = forceUnwrap(empty, "Oops it's empty")
+        _ = NSRegularExpression(static: "(")
+        _ = URL(static: "##")
         XCTFail("Should have trapped")
     }
 
