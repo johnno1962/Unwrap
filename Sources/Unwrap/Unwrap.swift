@@ -8,7 +8,7 @@
 //  Experimental alternative to force unwrapping in code.
 //  =====================================================
 //
-//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#1 $
+//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#4 $
 //
 
 import Foundation
@@ -21,14 +21,7 @@ import Foundation
 /// - Returns: unwrapped type
 public func forceUnwrap<T>(_ optional: T?, _ reasoning: String,
     file: StaticString = #file, line: UInt = #line) -> T {
-    switch optional {
-    case .none:
-        fatalError(
-            "Forced unwrap of type \(T?.self) asserting '\(reasoning)' failed",
-            file: file, line: line)
-    case .some(let unwrapped):
-        return unwrapped
-    }
+    return optional.forceUnwrap(reasoning, file: file, line: line)
 }
 
 /// Try to unwrap an optional providing more debug information
@@ -39,14 +32,47 @@ public func forceUnwrap<T>(_ optional: T?, _ reasoning: String,
 /// - Returns: unwrapped type
 public func unwrap<T>(_ optional: T?, _ reasoning: String,
     file: StaticString = #file, line: UInt = #line) throws -> T {
-    switch optional {
-    case .none:
-        throw NSError(domain: "Forec Unwrap", code: -1, userInfo: [
-            NSLocalizedDescriptionKey:
-            "Forced unwrap of type \(T?.self) asserting '\(reasoning)' failed",
-            "file": file, "line": line])
-    case .some(let unwrapped):
-        return unwrapped
+    return try optional.unwrap(reasoning, file: file, line: line)
+}
+
+// Alternatively as an extension on Optional (with optional reasoning)
+// viz. https://github.com/JohnSundell/Require
+extension Optional {
+    /// Force unwrap an optional providing more debug information
+    /// and more auditable than the '!' postfix operator.
+    /// - Parameters:
+    ///   - optional: Optional to be unwrapped
+    ///   - reasoning: Resaonsing why it should never be nil
+    /// - Returns: unwrapped type
+    public func forceUnwrap(_ reasoning: String = "Will never be nil",
+        file: StaticString = #file, line: UInt = #line) -> Wrapped {
+        switch self {
+        case .none:
+            fatalError(
+                "Forced unwrap of type \(Wrapped?.self) asserting '\(reasoning)' failed",
+                file: file, line: line)
+        case .some(let unwrapped):
+            return unwrapped
+        }
+    }
+
+    /// Try to unwrap an optional providing more debug information
+    /// than the '!' postfix operator and throw if nil.
+    /// - Parameters:
+    ///   - optional: Optional to be unwrapped
+    ///   - reasoning: Resaonsing why it should never be nil
+    /// - Returns: unwrapped type
+    public func unwrap(_ reasoning: String = "Will never be nil",
+        file: StaticString = #file, line: UInt = #line) throws -> Wrapped {
+        switch self {
+        case .none:
+            throw NSError(domain: "Forec Unwrap", code: -1, userInfo: [
+                NSLocalizedDescriptionKey:
+                "Forced unwrap of type \(Wrapped?.self) asserting '\(reasoning)' failed",
+                "file": file, "line": line])
+        case .some(let unwrapped):
+            return unwrapped
+        }
     }
 }
 
