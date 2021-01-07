@@ -8,7 +8,7 @@
 //  Experimental alternative to force unwrapping in code.
 //  =====================================================
 //
-//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#4 $
+//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#6 $
 //
 
 import Foundation
@@ -17,7 +17,7 @@ import Foundation
 /// and more auditable than the '!' postfix operator.
 /// - Parameters:
 ///   - optional: Optional to be unwrapped
-///   - reasoning: Resaonsing why it should never be nil
+///   - reasoning: Reasonsing why it should never be nil
 /// - Returns: unwrapped type
 public func forceUnwrap<T>(_ optional: T?, _ reasoning: String,
     file: StaticString = #file, line: UInt = #line) -> T {
@@ -28,7 +28,7 @@ public func forceUnwrap<T>(_ optional: T?, _ reasoning: String,
 /// than the '!' postfix operator and throw if nil.
 /// - Parameters:
 ///   - optional: Optional to be unwrapped
-///   - reasoning: Resaonsing why it should never be nil
+///   - reasoning: Reasonsing why it should never be nil
 /// - Returns: unwrapped type
 public func unwrap<T>(_ optional: T?, _ reasoning: String,
     file: StaticString = #file, line: UInt = #line) throws -> T {
@@ -41,8 +41,7 @@ extension Optional {
     /// Force unwrap an optional providing more debug information
     /// and more auditable than the '!' postfix operator.
     /// - Parameters:
-    ///   - optional: Optional to be unwrapped
-    ///   - reasoning: Resaonsing why it should never be nil
+    ///   - reasoning: Reasonsing why it should never be nil
     /// - Returns: unwrapped type
     public func forceUnwrap(_ reasoning: String = "Will never be nil",
         file: StaticString = #file, line: UInt = #line) -> Wrapped {
@@ -59,17 +58,23 @@ extension Optional {
     /// Try to unwrap an optional providing more debug information
     /// than the '!' postfix operator and throw if nil.
     /// - Parameters:
-    ///   - optional: Optional to be unwrapped
-    ///   - reasoning: Resaonsing why it should never be nil
+    ///   - reasoning: Reasonsing why it should never be nil
     /// - Returns: unwrapped type
     public func unwrap(_ reasoning: String = "Will never be nil",
         file: StaticString = #file, line: UInt = #line) throws -> Wrapped {
         switch self {
         case .none:
-            throw NSError(domain: "Forec Unwrap", code: -1, userInfo: [
+            let error = NSError(domain: "Force Unwrap", code: -1, userInfo: [
                 NSLocalizedDescriptionKey:
                 "Forced unwrap of type \(Wrapped?.self) asserting '\(reasoning)' failed",
                 "file": file, "line": line])
+            #if DEBUG
+            // For a Debug build this is a fatal error for investigation.
+            fatalError("\(error)", file: file, line: line)
+            #else
+            // Otherwise, in production throw so app can recover.
+            throw error
+            #endif
         case .some(let unwrapped):
             return unwrapped
         }
