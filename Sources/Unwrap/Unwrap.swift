@@ -8,7 +8,7 @@
 //  Experimental alternative to force unwrapping in code.
 //  =====================================================
 //
-//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#7 $
+//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#8 $
 //
 
 import Foundation
@@ -80,14 +80,16 @@ extension Optional {
         }
     }
 
-    public func fallback(_ fallback: Wrapped,
-                  file: StaticString = #file, line: UInt = #line) -> Wrapped {
-        #if DEBUG
-        fatalError("Fall back during development", file: file, line: line)
-        #else
-        NSLog("Falling back \(file):\(line)")
-        return fallback
-        #endif
+    /// Unwrap falling back to default value
+    /// - Parameters:
+    ///   - value: Value to use if optional in nil
+    ///   - file: Source file
+    ///   - line: Line number
+    /// - Returns: The unwrapped value or the default value
+    public func unwrap(or value: @autoclosure () -> Wrapped,
+        file: StaticString = #file, line: UInt = #line) -> Wrapped {
+        NSLog("Unwrap falling back to \(value()), \(file):\(line)")
+        return value()
     }
 }
 

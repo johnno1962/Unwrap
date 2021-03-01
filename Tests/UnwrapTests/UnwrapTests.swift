@@ -22,7 +22,7 @@ final class UnwrapTests: XCTestCase {
             XCTFail("Should not have thrown")
         }
         empty = nil
-        XCTAssertEqual(empty.fallback("OK"), "OK")
+        XCTAssertEqual(empty.unwrap(or: "OK"), "OK")
         do {
             _ = try unwrap(empty, "Should be empty")
         } catch {
