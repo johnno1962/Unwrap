@@ -5,13 +5,51 @@
 //  Created by John Holdsworth on 31/12/2020.
 //  Copyright © 2020 John Holdsworth. All rights reserved.
 //
-//  Experimental alternative to force unwrapping in code.
-//  =====================================================
+//  Experimental alternatives to force unwrapping in code.
+//  ======================================================
 //
-//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#8 $
+//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#11 $
 //
 
 import Foundation
+
+infix operator !!: NilCoalescingPrecedence
+
+extension Optional {
+    /// Preferred "Unwrap or throw" operator..
+    /// Always fails quickly during debugging for any exceptional
+    /// condition but gives a "Release" build of the application
+    /// the chance to follow an error recovery path if the value
+    /// is nil by throwing which can the error and not crash out.
+    /// - Parameters:
+    ///   - toUnwrap: Optional to unwrap
+    ///   - alternative: Message or Error to log/throw on nil
+    /// - Throws: NSError showing reasoning
+    /// - Returns: unwrapped value if there is one
+    public static func !!<T>(toUnwrap: Optional, alternative: @autoclosure () -> T) throws -> Wrapped {
+        switch toUnwrap {
+        case .none:
+            let value = alternative()
+            let toThrow = value as? Error ?? NSError(
+                domain: "ForcedUnwrap", code: -1, userInfo: [
+                NSLocalizedDescriptionKey:
+                "Forced unwrap of type \(Wrapped?.self) asserting '\(value)' failed"])
+            #if DEBUG
+            // Fail quickly during development.
+            fatalError("\(toThrow)")
+            #else
+            // Log and throw for a release build.
+            // Gives the app a chance to recover.
+            NSLog("\(toThrow)")
+            throw toThrow
+            #endif
+        case .some(let value):
+            return value
+        }
+    }
+}
+
+/// Previous variations on the theme...
 
 /// Force unwrap an optional providing more debug information
 /// and more auditable than the '!' postfix operator.
@@ -111,7 +149,7 @@ extension NSRegularExpression {
     /// - Parameters:
     ///   - static: Hard coded regex patten.
     ///   - purpose: Usage of this constant in code.
-    convenience init(static pattern: StaticString, _ purpose: StaticString,
+    convenience public init(static pattern: StaticString, _ purpose: StaticString,
                      options: NSRegularExpression.Options = [],
                      file: StaticString = #file, line: UInt = #line) {
         do {

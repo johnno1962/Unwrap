@@ -5,9 +5,11 @@
 //  Created by John Holdsworth on 31/12/2020.
 //  Copyright © 2020 John Holdsworth. All rights reserved.
 //
+//  $Id: //depot/Unwrap/Tests/UnwrapTests/UnwrapTests.swift#1 $
+//
 
 import XCTest
-@testable import Unwrap
+import Unwrap
 
 final class UnwrapTests: XCTestCase {
     func testExample() {
@@ -22,6 +24,11 @@ final class UnwrapTests: XCTestCase {
             XCTFail("Should not have thrown")
         }
         empty = nil
+        do {
+            try print(empty !! "WTF")
+        } catch {
+            print(error)
+        }
         XCTAssertEqual(empty.unwrap(or: "OK"), "OK")
         do {
             _ = try unwrap(empty, "Should be empty")
