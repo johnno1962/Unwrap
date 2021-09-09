@@ -3,12 +3,14 @@
 //  Unwrap
 //
 //  Created by John Holdsworth on 31/12/2020.
-//  Copyright © 2020 John Holdsworth. All rights reserved.
+//  Copyright © 2020 John Holdsworth.
 //
 //  Experimental alternatives to force unwrapping in code.
 //  ======================================================
 //
-//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#11 $
+//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#12 $
+//
+//  Repo/SPM: https://github.com/johnno1962/Unwrap
 //
 
 import Foundation
@@ -16,36 +18,57 @@ import Foundation
 infix operator !!: NilCoalescingPrecedence
 
 extension Optional {
-    /// Preferred "Unwrap or throw" operator..
-    /// Always fails quickly during debugging for any exceptional
-    /// condition but gives a "Release" build of the application
-    /// the chance to follow an error recovery path if the value
-    /// is nil by throwing which can the error and not crash out.
+    /// An Error thrown if you don't provide one.
+    public enum UnwrapError: Error {
+        case forceUnwrapFailed(text: String, file: StaticString = #file, line: UInt = #line)
+    }
+    /// Preferred "Unwrap or throw" operator.
+    /// Always fails quickly during debugging for exceptional
+    /// conditions but throws in a "Release" build motivating
+    /// the developer to provide an error recovery path if an
+    /// Optional is nil and not just crash the application out.
     /// - Parameters:
     ///   - toUnwrap: Optional to unwrap
     ///   - alternative: Message or Error to log/throw on nil
-    /// - Throws: NSError showing reasoning
+    /// - Throws: UnwrapError showing reasoning
     /// - Returns: unwrapped value if there is one
-    public static func !!<T>(toUnwrap: Optional, alternative: @autoclosure () -> T) throws -> Wrapped {
+    public static func !!<T>(toUnwrap: Optional,
+                          alternative: @autoclosure () -> T) throws -> Wrapped {
         switch toUnwrap {
         case .none:
-            let value = alternative()
-            let toThrow = value as? Error ?? NSError(
-                domain: "ForcedUnwrap", code: -1, userInfo: [
-                NSLocalizedDescriptionKey:
-                "Forced unwrap of type \(Wrapped?.self) asserting '\(value)' failed"])
-            #if DEBUG
-            // Fail quickly during development.
-            fatalError("\(toThrow)")
-            #else
-            // Log and throw for a release build.
-            // Gives the app a chance to recover.
-            NSLog("\(toThrow)")
-            throw toThrow
-            #endif
+            try unwrapFailed(throw: alternative())
         case .some(let value):
             return value
         }
+    }
+    /// Alternative as a fuction which has the advantage it
+    /// documents the file and line number.
+    public func unwrap<T>(orThrow alternative: @autoclosure () -> T,
+        file: StaticString = #file, line: UInt = #line) throws -> Wrapped {
+        switch self {
+        case .none:
+            try Self.unwrapFailed(throw: alternative(), file: file, line: line)
+        case .some(let value):
+            return value
+        }
+    }
+    /// Internal function performing the actual throw
+    private static func unwrapFailed<T>(throw alternative: T,
+        file: StaticString = #file, line: UInt = #line) throws -> Never {
+        if let throwingClosure = alternative as? () throws -> Void {
+            try throwingClosure()
+        }
+        let toThrow = alternative as? Error ??
+            UnwrapError.forceUnwrapFailed(text: "\(alternative)", file: file, line: line)
+        #if DEBUG
+        // Fail quickly during development.
+        fatalError("\(toThrow)", file: file, line: line)
+        #else
+        // Log and throw for a release build.
+        // Gives the app a chance to recover.
+        NSLog("\(toThrow)")
+        throw toThrow
+        #endif
     }
 }
 
