@@ -8,7 +8,7 @@
 //  Experimental alternatives to force unwrapping in code.
 //  ======================================================
 //
-//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#12 $
+//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#16 $
 //
 //  Repo/SPM: https://github.com/johnno1962/Unwrap
 //
@@ -17,12 +17,40 @@ import Foundation
 
 infix operator !!: NilCoalescingPrecedence
 
+/// Function that allows you to throw but in an expression.
+/// Intended for use after nil coalescing operator in unwrap.
+/// Gives fatalError in Debug builds to aid debugging and
+/// throws in a Release build for app to be able to recover.
+/// - Parameters:
+///   - toThrow: A String, Error or closure that throws
+/// - Throws: Error passed in or UnwrapError
+/// - Returns: Never
+public func unwrapFailure<E,T>(throw toThrow: E,
+    file: StaticString = #file, line: UInt = #line) throws -> T {
+    if let throwingClosure = toThrow as? () throws -> Void {
+        try throwingClosure()
+    }
+    let toThrow = toThrow as? Error ?? Optional<T>.UnwrapError
+        .forceUnwrapFailed(text: "\(toThrow)", type: Optional<T>.self,
+            file: file, line: line)
+    #if DEBUG
+    // Fail quickly during development.
+    fatalError("\(toThrow)", file: file, line: line)
+    #else
+    // Log and throw for a release build.
+    // Gives the app a chance to recover.
+    NSLog("\(toThrow)")
+    throw toThrow
+    #endif
+}
+
 extension Optional {
     /// An Error thrown if you don't provide one.
     public enum UnwrapError: Error {
-        case forceUnwrapFailed(text: String, file: StaticString = #file, line: UInt = #line)
+        case forceUnwrapFailed(text: String, type: Any.Type,
+            file: StaticString, line: UInt)
     }
-    /// Preferred "Unwrap or throw" operator.
+    /// Optional "Unwrap or throw" operator if you prefer.
     /// Always fails quickly during debugging for exceptional
     /// conditions but throws in a "Release" build motivating
     /// the developer to provide an error recovery path if an
@@ -36,39 +64,21 @@ extension Optional {
                           alternative: @autoclosure () -> T) throws -> Wrapped {
         switch toUnwrap {
         case .none:
-            try unwrapFailed(throw: alternative())
+            return try unwrapFailure(throw: alternative())
         case .some(let value):
             return value
         }
     }
     /// Alternative as a fuction which has the advantage it
-    /// documents the file and line number.
-    public func unwrap<T>(orThrow alternative: @autoclosure () -> T,
+    /// documents the file and line number correctly.
+    public func unwrapped<T>(orThrow alternative: @autoclosure () -> T,
         file: StaticString = #file, line: UInt = #line) throws -> Wrapped {
         switch self {
         case .none:
-            try Self.unwrapFailed(throw: alternative(), file: file, line: line)
+            return try unwrapFailure(throw: alternative(), file: file, line: line)
         case .some(let value):
             return value
         }
-    }
-    /// Internal function performing the actual throw
-    private static func unwrapFailed<T>(throw alternative: T,
-        file: StaticString = #file, line: UInt = #line) throws -> Never {
-        if let throwingClosure = alternative as? () throws -> Void {
-            try throwingClosure()
-        }
-        let toThrow = alternative as? Error ??
-            UnwrapError.forceUnwrapFailed(text: "\(alternative)", file: file, line: line)
-        #if DEBUG
-        // Fail quickly during development.
-        fatalError("\(toThrow)", file: file, line: line)
-        #else
-        // Log and throw for a release build.
-        // Gives the app a chance to recover.
-        NSLog("\(toThrow)")
-        throw toThrow
-        #endif
     }
 }
 
@@ -178,7 +188,7 @@ extension NSRegularExpression {
         do {
             try self.init(pattern: pattern.description, options: options)
         } catch {
-            fatalError("Invalid static regex pattern for \"\(purpose)\": \(error)",
+            fatalError("Invalid static regex pattern \(pattern) for \"\(purpose)\": \(error)",
                        file: file, line: line)
         }
     }
