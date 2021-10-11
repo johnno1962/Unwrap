@@ -8,7 +8,7 @@
 //  Experimental alternatives to force unwrapping in code.
 //  ======================================================
 //
-//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#16 $
+//  $Id: //depot/Unwrap/Sources/Unwrap/Unwrap.swift#17 $
 //
 //  Repo/SPM: https://github.com/johnno1962/Unwrap
 //
@@ -43,7 +43,6 @@ public func unwrapFailure<E,T>(throw toThrow: E,
     throw toThrow
     #endif
 }
-
 extension Optional {
     /// An Error thrown if you don't provide one.
     public enum UnwrapError: Error {
